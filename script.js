@@ -1,4 +1,4 @@
-/* Code Breaker — With Secret Pattern + Hint Button + Timer + Restart */
+/* Code Breaker — With Secret Pattern + Hint Button + Timer + Restart + Sounds */
 
 (() => {
   const arrayBoard = document.getElementById('arrayBoard');
@@ -26,6 +26,37 @@
   let timerInterval = null;
   let gameOver = false;
 
+  // === SOUND EFFECTS ===
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  function playTone(freq, duration, type = 'sine') {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  }
+
+  function beep() {
+    playTone(800, 0.1, 'square');
+  }
+
+  function buzz() {
+    playTone(200, 0.2, 'sawtooth');
+    setTimeout(() => playTone(150, 0.2, 'sawtooth'), 200);
+  }
+
+  function fanfare() {
+    const notes = [523, 659, 784, 1046]; // C-E-G-C'
+    notes.forEach((n, i) => {
+      setTimeout(() => playTone(n, 0.2, 'triangle'), i * 250);
+    });
+  }
+
+  // === Timer Functions ===
   function startTimer() {
     clearInterval(timerInterval);
     timeLeft = 60;
@@ -38,6 +69,7 @@
         clearInterval(timerInterval);
         gameOver = true;
         setFeedback('⏰ Time is up! Game Over.', 'bad');
+        buzz();
       }
     }, 1000);
   }
@@ -46,6 +78,7 @@
     clearInterval(timerInterval);
   }
 
+  // === Feedback Messages ===
   function setFeedback(msg, type = '') {
     feedback.className = 'feedback';
     if (type) feedback.classList.add(type);
@@ -58,6 +91,7 @@
     }, 3000);
   }
 
+  // === Array Renderer ===
   function renderArray(highlights = new Set(), classes = {}) {
     arrayBoard.innerHTML = '';
     arr.forEach((val, i) => {
@@ -104,14 +138,17 @@
 
     if (idx === null || val === null) {
       setFeedback('❗ Provide both index and digit (0–9).', 'warn');
+      buzz();
       return;
     }
     if (val < 0 || val > 9) {
       setFeedback('❌ Digit must be between 0 and 9.', 'bad');
+      buzz();
       return;
     }
     if (idx < 0 || idx >= arr.length) {
       setFeedback('🚫 Index out of bounds!', 'bad');
+      buzz();
       return;
     }
 
@@ -121,6 +158,7 @@
     arr[idx] = val;
 
     setFeedback(`✅ Inserted ${val} at index ${idx}!`, 'ok');
+    beep();
     renderArray(new Set(), { [idx]: 'inserted' });
   });
 
@@ -130,10 +168,12 @@
     const idx = parseIntStrict(indexInput.value);
     if (idx === null) {
       setFeedback('❗ Provide an index to delete.', 'warn');
+      buzz();
       return;
     }
     if (idx < 0 || idx >= arr.length) {
       setFeedback('🚫 Index out of bounds!', 'bad');
+      buzz();
       return;
     }
 
@@ -152,6 +192,7 @@
     const pattern = parsePattern(patternInput.value);
     if (pattern.length === 0) {
       setFeedback('❗ Enter a valid pattern (e.g., 1,2,3).', 'warn');
+      buzz();
       return;
     }
 
@@ -177,6 +218,7 @@
 
     if (found === -1) {
       setFeedback('🔎 Pattern not found.', 'bad');
+      buzz();
       renderArray();
     } else {
       const matchSet = new Set();
@@ -187,6 +229,7 @@
         stopTimer();
         const secondsTaken = 60 - timeLeft;
         setFeedback(`🎉 You cracked the code in ${secondsTaken} seconds!`, 'ok');
+        fanfare();
         gameOver = true;
       } else {
         setFeedback(`✅ Pattern ${pattern.join(',')} found at index ${found}!`, 'ok');
