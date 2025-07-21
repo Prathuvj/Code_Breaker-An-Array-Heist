@@ -1,11 +1,8 @@
-/* Code Breaker — With Secret Pattern + Hint Button + Timer + Restart + Sounds */
+/* Code Breaker — With Timer, Secret Pattern & Sound Effects */
 
 (() => {
   const arrayBoard = document.getElementById('arrayBoard');
   const feedback = document.getElementById('feedback');
-  const secretPatternDiv = document.getElementById('secretPattern');
-  const hintBtn = document.getElementById('hintBtn');
-  const timerEl = document.getElementById('timer');
 
   const indexInput = document.getElementById('indexInput');
   const valueInput = document.getElementById('valueInput');
@@ -15,70 +12,50 @@
   const deleteBtn = document.getElementById('deleteBtn');
   const searchBtn = document.getElementById('searchBtn');
   const resetBtn = document.getElementById('resetBtn');
-  const restartBtn = document.getElementById('restartBtn');
 
   let arr = new Array(10).fill(null);
   let feedbackTimer = null;
-  let secretPattern = [];
 
-  // Timer
+  // === Secret Pattern ===
+  let secretPattern = [];
+  function generateSecretPattern() {
+    secretPattern = [];
+    for (let i = 0; i < 3; i++) {
+      secretPattern.push(Math.floor(Math.random() * 10));
+    }
+  }
+  generateSecretPattern();
+
+  // === Timer ===
   let timeLeft = 60;
   let timerInterval = null;
-  let gameOver = false;
+  let startTime = null;
+  const timerDisplay = document.createElement('div');
+  timerDisplay.className = 'timer';
+  document.body.insertBefore(timerDisplay, arrayBoard);
 
-  // === SOUND EFFECTS ===
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-  function playTone(freq, duration, type = 'sine') {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.value = freq;
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + duration);
-  }
-
-  function beep() {
-    playTone(800, 0.1, 'square');
-  }
-
-  function buzz() {
-    playTone(200, 0.2, 'sawtooth');
-    setTimeout(() => playTone(150, 0.2, 'sawtooth'), 200);
-  }
-
-  function fanfare() {
-    const notes = [523, 659, 784, 1046]; // C-E-G-C'
-    notes.forEach((n, i) => {
-      setTimeout(() => playTone(n, 0.2, 'triangle'), i * 250);
-    });
-  }
-
-  // === Timer Functions ===
   function startTimer() {
-    clearInterval(timerInterval);
+    startTime = Date.now();
     timeLeft = 60;
-    timerEl.textContent = `⏳ ${timeLeft}s`;
+    updateTimer();
+    if (timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(() => {
-      if (timeLeft > 0) {
-        timeLeft--;
-        timerEl.textContent = `⏳ ${timeLeft}s`;
-      } else {
+      timeLeft = 60 - Math.floor((Date.now() - startTime) / 1000);
+      if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        gameOver = true;
-        setFeedback('⏰ Time is up! Game Over.', 'bad');
-        buzz();
+        setFeedback('⏰ Time’s up! Try again.', 'bad');
+        arr = new Array(10).fill(null);
+        renderArray();
       }
+      updateTimer();
     }, 1000);
   }
 
-  function stopTimer() {
-    clearInterval(timerInterval);
+  function updateTimer() {
+    timerDisplay.textContent = `⏳ Time Left: ${Math.max(timeLeft, 0)}s`;
   }
 
-  // === Feedback Messages ===
+  // === Feedback System ===
   function setFeedback(msg, type = '') {
     feedback.className = 'feedback';
     if (type) feedback.classList.add(type);
@@ -91,7 +68,7 @@
     }, 3000);
   }
 
-  // === Array Renderer ===
+  // === Array Rendering ===
   function renderArray(highlights = new Set(), classes = {}) {
     arrayBoard.innerHTML = '';
     arr.forEach((val, i) => {
@@ -115,12 +92,12 @@
     });
   }
 
+  // === Utility ===
   function parseIntStrict(s) {
     if (s === '' || s === null || s === undefined) return null;
     const n = Number(s);
     return Number.isInteger(n) ? n : null;
   }
-
   function parsePattern(s) {
     return s
       .split(',')
@@ -130,25 +107,66 @@
       .filter(x => Number.isFinite(x));
   }
 
+  // === Sound Effects ===
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  function playBeep(freq = 440, duration = 0.15) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = freq;
+    osc.type = "sine";
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  }
+
+  function playBuzz() {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type = "square";
+    osc.frequency.value = 120;
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.3);
+  }
+
+  function playFanfare() {
+    const freqs = [523, 659, 784]; // C5, E5, G5
+    freqs.forEach((f, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = f;
+      osc.type = "triangle";
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime + i * 0.2);
+      osc.start(audioCtx.currentTime + i * 0.2);
+      osc.stop(audioCtx.currentTime + i * 0.2 + 0.3);
+    });
+  }
+
   // === Insert ===
   insertBtn.addEventListener('click', () => {
-    if (gameOver) return;
     const idx = parseIntStrict(indexInput.value);
     const val = parseIntStrict(valueInput.value);
 
     if (idx === null || val === null) {
       setFeedback('❗ Provide both index and digit (0–9).', 'warn');
-      buzz();
+      playBuzz();
       return;
     }
     if (val < 0 || val > 9) {
       setFeedback('❌ Digit must be between 0 and 9.', 'bad');
-      buzz();
+      playBuzz();
       return;
     }
     if (idx < 0 || idx >= arr.length) {
       setFeedback('🚫 Index out of bounds!', 'bad');
-      buzz();
+      playBuzz();
       return;
     }
 
@@ -158,22 +176,21 @@
     arr[idx] = val;
 
     setFeedback(`✅ Inserted ${val} at index ${idx}!`, 'ok');
-    beep();
+    playBeep();
     renderArray(new Set(), { [idx]: 'inserted' });
   });
 
   // === Delete ===
   deleteBtn.addEventListener('click', () => {
-    if (gameOver) return;
     const idx = parseIntStrict(indexInput.value);
     if (idx === null) {
       setFeedback('❗ Provide an index to delete.', 'warn');
-      buzz();
+      playBuzz();
       return;
     }
     if (idx < 0 || idx >= arr.length) {
       setFeedback('🚫 Index out of bounds!', 'bad');
-      buzz();
+      playBuzz();
       return;
     }
 
@@ -183,16 +200,16 @@
     arr[arr.length - 1] = null;
 
     setFeedback(`🗑️ Deleted element at index ${idx}.`, 'ok');
+    playBeep(300);
     renderArray(new Set(), { [idx]: 'deleted' });
   });
 
   // === Search ===
   searchBtn.addEventListener('click', async () => {
-    if (gameOver) return;
     const pattern = parsePattern(patternInput.value);
     if (pattern.length === 0) {
       setFeedback('❗ Enter a valid pattern (e.g., 1,2,3).', 'warn');
-      buzz();
+      playBuzz();
       return;
     }
 
@@ -218,7 +235,7 @@
 
     if (found === -1) {
       setFeedback('🔎 Pattern not found.', 'bad');
-      buzz();
+      playBuzz();
       renderArray();
     } else {
       const matchSet = new Set();
@@ -226,53 +243,28 @@
       renderArray(matchSet);
 
       if (pattern.join(',') === secretPattern.join(',')) {
-        stopTimer();
-        const secondsTaken = 60 - timeLeft;
-        setFeedback(`🎉 You cracked the code in ${secondsTaken} seconds!`, 'ok');
-        fanfare();
-        gameOver = true;
+        clearInterval(timerInterval);
+        const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+        setFeedback(`🎉 You cracked the code in ${timeTaken} seconds!`, 'ok');
+        playFanfare();
       } else {
-        setFeedback(`✅ Pattern ${pattern.join(',')} found at index ${found}!`, 'ok');
+        setFeedback(`✅ Pattern ${pattern.join(',')} found at index ${found}.`, 'ok');
+        playBeep(600);
       }
     }
   });
 
-  // === Reset Array Only ===
+  // === Reset ===
   resetBtn.addEventListener('click', () => {
-    if (gameOver) return;
-    arr = new Array(10).fill(null);
-    setFeedback('🔄 Array reset.', 'ok');
-    renderArray();
-  });
-
-  // === Restart Game ===
-  restartBtn.addEventListener('click', () => {
     arr = new Array(10).fill(null);
     generateSecretPattern();
-    secretPatternDiv.classList.add('hidden');
-    gameOver = false;
-    renderArray();
     startTimer();
-    setFeedback('🔄 New game started! Crack the new code.', 'ok');
+    setFeedback('🔄 Array reset. New secret code generated.', 'ok');
+    renderArray();
   });
 
-  // === Hint Button ===
-  hintBtn.addEventListener('click', () => {
-    if (gameOver) return;
-    secretPatternDiv.classList.remove('hidden');
-    secretPatternDiv.textContent = `Secret Pattern: [${secretPattern.join(', ')}]`;
-    setFeedback('💡 Hint revealed!', 'warn');
-  });
-
-  // === Generate Secret Pattern ===
-  function generateSecretPattern() {
-    secretPattern = Array.from({ length: 3 }, () => Math.floor(Math.random() * 10));
-    secretPatternDiv.textContent = '';
-  }
-
-  // Init
-  generateSecretPattern();
+  // === Init ===
   renderArray();
-  setFeedback('💡 Ready. Insert digits to crack the code!', 'ok');
   startTimer();
+  setFeedback('💡 Ready. Use the controls to manipulate the array.', 'ok');
 })();
