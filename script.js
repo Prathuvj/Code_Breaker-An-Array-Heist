@@ -1,4 +1,4 @@
-/* Code Breaker — With Secret Pattern + Hint Button + Timer */
+/* Code Breaker — With Secret Pattern + Hint Button + Timer + Restart */
 
 (() => {
   const arrayBoard = document.getElementById('arrayBoard');
@@ -15,6 +15,7 @@
   const deleteBtn = document.getElementById('deleteBtn');
   const searchBtn = document.getElementById('searchBtn');
   const resetBtn = document.getElementById('resetBtn');
+  const restartBtn = document.getElementById('restartBtn');
 
   let arr = new Array(10).fill(null);
   let feedbackTimer = null;
@@ -26,6 +27,8 @@
   let gameOver = false;
 
   function startTimer() {
+    clearInterval(timerInterval);
+    timeLeft = 60;
     timerEl.textContent = `⏳ ${timeLeft}s`;
     timerInterval = setInterval(() => {
       if (timeLeft > 0) {
@@ -191,11 +194,23 @@
     }
   });
 
-  // === Reset ===
+  // === Reset Array Only ===
   resetBtn.addEventListener('click', () => {
+    if (gameOver) return;
     arr = new Array(10).fill(null);
     setFeedback('🔄 Array reset.', 'ok');
     renderArray();
+  });
+
+  // === Restart Game ===
+  restartBtn.addEventListener('click', () => {
+    arr = new Array(10).fill(null);
+    generateSecretPattern();
+    secretPatternDiv.classList.add('hidden');
+    gameOver = false;
+    renderArray();
+    startTimer();
+    setFeedback('🔄 New game started! Crack the new code.', 'ok');
   });
 
   // === Hint Button ===
@@ -206,7 +221,7 @@
     setFeedback('💡 Hint revealed!', 'warn');
   });
 
-  // === Generate Secret Pattern on Load ===
+  // === Generate Secret Pattern ===
   function generateSecretPattern() {
     secretPattern = Array.from({ length: 3 }, () => Math.floor(Math.random() * 10));
     secretPatternDiv.textContent = '';
