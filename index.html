@@ -17,14 +17,14 @@
       <div class="control-row">
         <label>
           Index
-          <input id="indexInput" type="number" min="0" placeholder="e.g., 0" />
+          <input id="indexInput" type="number" min="0" max="9" placeholder="e.g., 0" />
         </label>
         <label>
           Digit
           <input id="valueInput" type="number" min="0" max="9" placeholder="0–9" />
         </label>
-        <button id="insertBtn" class="btn">Insert</button>
-        <button id="deleteBtn" class="btn btn-secondary">Delete</button>
+        <button id="insertBtn" class="btn">Insert at Index</button>
+        <button id="deleteBtn" class="btn btn-secondary">Delete at Index</button>
       </div>
 
       <div class="control-row">
@@ -33,6 +33,10 @@
           <input id="patternInput" type="text" value="2,1,4" placeholder="e.g., 2,1,4" />
         </label>
         <button id="searchBtn" class="btn btn-accent">Search Pattern</button>
+      </div>
+
+      <div class="control-row">
+        <button id="resetBtn" class="btn btn-secondary stretch">Reset</button>
       </div>
     </section>
 

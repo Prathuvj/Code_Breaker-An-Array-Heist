@@ -1,8 +1,6 @@
-/* Code Breaker — Boilerplate + Visual Array Display
-   - Visual array of 8–10 cells in a horizontal row
-   - Insert, delete, search (linear subarray match)
-   - Lightweight animations & feedback
-   - No external libraries
+/* Code Breaker — With Operations Panel + Index Labels
+   - Visual array of 10 cells with index labels
+   - Insert (shift right), Delete (shift left), Search, Reset
 */
 
 (() => {
@@ -16,6 +14,7 @@
   const insertBtn = document.getElementById('insertBtn');
   const deleteBtn = document.getElementById('deleteBtn');
   const searchBtn = document.getElementById('searchBtn');
+  const resetBtn = document.getElementById('resetBtn');
 
   /** @type {(number|null)[]} */
   let arr = new Array(10).fill(null); // fixed size array of 10 cells
@@ -29,6 +28,9 @@
   function renderArray(highlights = new Set(), insertedIndex = null, deletedIndex = null) {
     arrayBoard.innerHTML = '';
     arr.forEach((val, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'cell-wrap';
+
       const cell = document.createElement('div');
       cell.className = 'cell';
       cell.textContent = val === null ? '' : String(val);
@@ -37,14 +39,14 @@
       if (insertedIndex === i) cell.classList.add('inserted');
       if (deletedIndex === i) cell.classList.add('deleted');
 
-      arrayBoard.appendChild(cell);
-    });
-  }
+      const indexLabel = document.createElement('div');
+      indexLabel.className = 'cell-index';
+      indexLabel.textContent = i;
 
-  function clampIndex(i) {
-    if (i < 0) return 0;
-    if (i >= arr.length) return arr.length - 1;
-    return i;
+      wrap.appendChild(cell);
+      wrap.appendChild(indexLabel);
+      arrayBoard.appendChild(wrap);
+    });
   }
 
   function parseIntStrict(s) {
@@ -89,11 +91,19 @@
       setFeedback('Digit must be between 0 and 9.', 'bad');
       return;
     }
+    if (idxRaw < 0 || idxRaw >= arr.length) {
+      setFeedback('Index out of bounds.', 'bad');
+      return;
+    }
 
-    const i = clampIndex(idxRaw);
-    arr[i] = valRaw; // overwrite instead of shifting
-    setFeedback(`Inserted ${valRaw} at index ${i}.`, 'ok');
-    renderArray(new Set(), i, null);
+    // Shift right
+    for (let j = arr.length - 1; j > idxRaw; j--) {
+      arr[j] = arr[j - 1];
+    }
+    arr[idxRaw] = valRaw;
+
+    setFeedback(`Inserted ${valRaw} at index ${idxRaw} (shifted right).`, 'ok');
+    renderArray(new Set(), idxRaw, null);
   });
 
   deleteBtn.addEventListener('click', () => {
@@ -107,8 +117,13 @@
       return;
     }
 
-    arr[idxRaw] = null; // clear the cell
-    setFeedback(`Deleted value at index ${idxRaw}.`, 'ok');
+    // Shift left
+    for (let j = idxRaw; j < arr.length - 1; j++) {
+      arr[j] = arr[j + 1];
+    }
+    arr[arr.length - 1] = null;
+
+    setFeedback(`Deleted value at index ${idxRaw} (shifted left).`, 'ok');
     renderArray(new Set(), null, idxRaw);
   });
 
@@ -131,6 +146,12 @@
 
     setFeedback(`Pattern found at index ${start}!`, 'ok');
     renderArray(highlightIdx);
+  });
+
+  resetBtn.addEventListener('click', () => {
+    arr = new Array(10).fill(null);
+    setFeedback('Array reset.', 'ok');
+    renderArray();
   });
 
   // Initial paint
