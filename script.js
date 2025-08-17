@@ -1,7 +1,4 @@
-/* Code Breaker — With Operations Panel + Index Labels
-   - Visual array of 10 cells with index labels
-   - Insert (shift right), Delete (shift left), Search, Reset
-*/
+/* Code Breaker — With Animations (smooth & quick) */
 
 (() => {
   const arrayBoard = document.getElementById('arrayBoard');
@@ -16,8 +13,7 @@
   const searchBtn = document.getElementById('searchBtn');
   const resetBtn = document.getElementById('resetBtn');
 
-  /** @type {(number|null)[]} */
-  let arr = new Array(10).fill(null); // fixed size array of 10 cells
+  let arr = new Array(10).fill(null);
 
   function setFeedback(msg, type = '') {
     feedback.className = 'feedback';
@@ -25,7 +21,7 @@
     feedback.textContent = msg;
   }
 
-  function renderArray(highlights = new Set(), insertedIndex = null, deletedIndex = null) {
+  function renderArray(highlights = new Set(), classes = {}) {
     arrayBoard.innerHTML = '';
     arr.forEach((val, i) => {
       const wrap = document.createElement('div');
@@ -36,8 +32,7 @@
       cell.textContent = val === null ? '' : String(val);
 
       if (highlights.has(i)) cell.classList.add('match');
-      if (insertedIndex === i) cell.classList.add('inserted');
-      if (deletedIndex === i) cell.classList.add('deleted');
+      if (classes[i]) cell.classList.add(classes[i]);
 
       const indexLabel = document.createElement('div');
       indexLabel.className = 'cell-index';
@@ -64,97 +59,107 @@
       .filter(x => Number.isFinite(x));
   }
 
-  function linearSubarraySearch(haystack, needle) {
-    if (needle.length === 0) return -1;
-    if (needle.length > haystack.length) return -1;
-
-    for (let i = 0; i <= haystack.length - needle.length; i++) {
-      let ok = true;
-      for (let j = 0; j < needle.length; j++) {
-        if (haystack[i + j] !== needle[j]) { ok = false; break; }
-      }
-      if (ok) return i;
-    }
-    return -1;
-  }
-
-  // Event handlers
+  // === Insert ===
   insertBtn.addEventListener('click', () => {
-    const idxRaw = parseIntStrict(indexInput.value);
-    const valRaw = parseIntStrict(valueInput.value);
+    const idx = parseIntStrict(indexInput.value);
+    const val = parseIntStrict(valueInput.value);
 
-    if (idxRaw === null || valRaw === null) {
+    if (idx === null || val === null) {
       setFeedback('Provide both index and digit (0–9).', 'warn');
       return;
     }
-    if (valRaw < 0 || valRaw > 9) {
+    if (val < 0 || val > 9) {
       setFeedback('Digit must be between 0 and 9.', 'bad');
       return;
     }
-    if (idxRaw < 0 || idxRaw >= arr.length) {
+    if (idx < 0 || idx >= arr.length) {
       setFeedback('Index out of bounds.', 'bad');
       return;
     }
 
     // Shift right
-    for (let j = arr.length - 1; j > idxRaw; j--) {
+    for (let j = arr.length - 1; j > idx; j--) {
       arr[j] = arr[j - 1];
     }
-    arr[idxRaw] = valRaw;
+    arr[idx] = val;
 
-    setFeedback(`Inserted ${valRaw} at index ${idxRaw} (shifted right).`, 'ok');
-    renderArray(new Set(), idxRaw, null);
+    setFeedback(`Inserted ${val} at index ${idx}.`, 'ok');
+    renderArray(new Set(), { [idx]: 'inserted' });
   });
 
+  // === Delete ===
   deleteBtn.addEventListener('click', () => {
-    const idxRaw = parseIntStrict(indexInput.value);
-    if (idxRaw === null) {
+    const idx = parseIntStrict(indexInput.value);
+    if (idx === null) {
       setFeedback('Provide an index to delete.', 'warn');
       return;
     }
-    if (idxRaw < 0 || idxRaw >= arr.length) {
+    if (idx < 0 || idx >= arr.length) {
       setFeedback('Index out of bounds.', 'bad');
       return;
     }
 
     // Shift left
-    for (let j = idxRaw; j < arr.length - 1; j++) {
+    for (let j = idx; j < arr.length - 1; j++) {
       arr[j] = arr[j + 1];
     }
     arr[arr.length - 1] = null;
 
-    setFeedback(`Deleted value at index ${idxRaw} (shifted left).`, 'ok');
-    renderArray(new Set(), null, idxRaw);
+    setFeedback(`Deleted value at index ${idx}.`, 'ok');
+    renderArray(new Set(), { [idx]: 'deleted' });
   });
 
-  searchBtn.addEventListener('click', () => {
+  // === Search (animated step-by-step) ===
+  searchBtn.addEventListener('click', async () => {
     const pattern = parsePattern(patternInput.value);
     if (pattern.length === 0) {
       setFeedback('Enter a comma-separated pattern, e.g., 2,1,4', 'warn');
       return;
     }
 
-    const start = linearSubarraySearch(arr, pattern);
-    if (start === -1) {
-      setFeedback('Pattern not found.', 'bad');
-      renderArray(new Set());
-      return;
+    let found = -1;
+    for (let i = 0; i <= arr.length - pattern.length; i++) {
+      // highlight current window
+      const highlights = new Set();
+      for (let j = 0; j < pattern.length; j++) {
+        highlights.add(i + j);
+      }
+      renderArray(highlights, Object.fromEntries([...highlights].map(h => [h, 'searching'])));
+      await new Promise(r => setTimeout(r, 300));
+
+      // check this window
+      let ok = true;
+      for (let j = 0; j < pattern.length; j++) {
+        if (arr[i + j] !== pattern[j]) { ok = false; break; }
+      }
+      if (ok) {
+        found = i;
+        break;
+      } else {
+        renderArray(highlights, Object.fromEntries([...highlights].map(h => [h, 'search-fail'])));
+        await new Promise(r => setTimeout(r, 200));
+      }
     }
 
-    const highlightIdx = new Set();
-    for (let k = 0; k < pattern.length; k++) highlightIdx.add(start + k);
-
-    setFeedback(`Pattern found at index ${start}!`, 'ok');
-    renderArray(highlightIdx);
+    if (found === -1) {
+      setFeedback('Pattern not found.', 'bad');
+      renderArray();
+    } else {
+      const matchSet = new Set();
+      for (let k = 0; k < pattern.length; k++) matchSet.add(found + k);
+      renderArray(matchSet);
+      setFeedback(`Pattern found at index ${found}!`, 'ok');
+    }
   });
 
+  // === Reset ===
   resetBtn.addEventListener('click', () => {
     arr = new Array(10).fill(null);
     setFeedback('Array reset.', 'ok');
     renderArray();
   });
 
-  // Initial paint
+  // Initial render
   renderArray();
   setFeedback('Ready.');
 })();
