@@ -17,11 +17,19 @@ h1 {
   margin-bottom: 1rem;
 }
 
-.secret-pattern {
+.secret-container {
   margin-bottom: 1rem;
+}
+
+.secret-pattern {
+  margin-top: 0.5rem;
   font-size: 1rem;
   font-weight: bold;
   color: var(--warn);
+}
+
+.hidden {
+  display: none;
 }
 
 .array-board {
@@ -82,7 +90,8 @@ h1 {
 .control {
   margin: 0.3rem 0;
 }
-.buttons button {
+.buttons button,
+#hintBtn {
   margin: 0.3rem;
   padding: 0.5rem 1rem;
   border: none;
@@ -92,7 +101,8 @@ h1 {
   cursor: pointer;
   transition: background 0.2s;
 }
-.buttons button:hover {
+.buttons button:hover,
+#hintBtn:hover {
   background: #2ea043;
 }
 
