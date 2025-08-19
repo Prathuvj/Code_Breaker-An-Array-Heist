@@ -1,9 +1,10 @@
-/* Code Breaker — With Secret Pattern */
+/* Code Breaker — With Secret Pattern + Hint Button */
 
 (() => {
   const arrayBoard = document.getElementById('arrayBoard');
   const feedback = document.getElementById('feedback');
   const secretPatternDiv = document.getElementById('secretPattern');
+  const hintBtn = document.getElementById('hintBtn');
 
   const indexInput = document.getElementById('indexInput');
   const valueInput = document.getElementById('valueInput');
@@ -23,13 +24,8 @@
     if (type) feedback.classList.add(type);
     feedback.textContent = msg;
 
-    // Fade-in
     feedback.classList.add('show');
-
-    // Clear old timer
     if (feedbackTimer) clearTimeout(feedbackTimer);
-
-    // Auto hide after 3s
     feedbackTimer = setTimeout(() => {
       feedback.classList.remove('show');
     }, 3000);
@@ -157,7 +153,6 @@
       for (let k = 0; k < pattern.length; k++) matchSet.add(found + k);
       renderArray(matchSet);
 
-      // Check if secret pattern is cracked
       if (pattern.join(',') === secretPattern.join(',')) {
         setFeedback('🎉 Level Complete! Secret pattern unlocked.', 'ok');
       } else {
@@ -173,10 +168,18 @@
     renderArray();
   });
 
+  // === Hint Button ===
+  hintBtn.addEventListener('click', () => {
+    secretPatternDiv.classList.remove('hidden');
+    secretPatternDiv.textContent = `Secret Pattern: [${secretPattern.join(', ')}]`;
+    setFeedback('💡 Hint revealed!', 'warn');
+  });
+
   // === Generate Secret Pattern on Load ===
   function generateSecretPattern() {
     secretPattern = Array.from({ length: 3 }, () => Math.floor(Math.random() * 10));
-    secretPatternDiv.textContent = `Secret Pattern (for testing): [${secretPattern.join(', ')}]`;
+    // initially hidden
+    secretPatternDiv.textContent = '';
   }
 
   // Init
