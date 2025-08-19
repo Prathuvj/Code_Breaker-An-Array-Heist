@@ -1,8 +1,9 @@
-/* Code Breaker — With Feedback Toast System */
+/* Code Breaker — With Secret Pattern */
 
 (() => {
   const arrayBoard = document.getElementById('arrayBoard');
   const feedback = document.getElementById('feedback');
+  const secretPatternDiv = document.getElementById('secretPattern');
 
   const indexInput = document.getElementById('indexInput');
   const valueInput = document.getElementById('valueInput');
@@ -15,6 +16,7 @@
 
   let arr = new Array(10).fill(null);
   let feedbackTimer = null;
+  let secretPattern = [];
 
   function setFeedback(msg, type = '') {
     feedback.className = 'feedback';
@@ -154,7 +156,13 @@
       const matchSet = new Set();
       for (let k = 0; k < pattern.length; k++) matchSet.add(found + k);
       renderArray(matchSet);
-      setFeedback(`🎉 Pattern ${pattern.join(',')} found at index ${found}!`, 'ok');
+
+      // Check if secret pattern is cracked
+      if (pattern.join(',') === secretPattern.join(',')) {
+        setFeedback('🎉 Level Complete! Secret pattern unlocked.', 'ok');
+      } else {
+        setFeedback(`✅ Pattern ${pattern.join(',')} found at index ${found}!`, 'ok');
+      }
     }
   });
 
@@ -165,6 +173,14 @@
     renderArray();
   });
 
+  // === Generate Secret Pattern on Load ===
+  function generateSecretPattern() {
+    secretPattern = Array.from({ length: 3 }, () => Math.floor(Math.random() * 10));
+    secretPatternDiv.textContent = `Secret Pattern (for testing): [${secretPattern.join(', ')}]`;
+  }
+
+  // Init
+  generateSecretPattern();
   renderArray();
-  setFeedback('💡 Ready. Use the controls to manipulate the array.', 'ok');
+  setFeedback('💡 Ready. Insert digits to crack the code!', 'ok');
 })();
