@@ -1,4 +1,4 @@
-/* Code Breaker — With Animations (smooth & quick) */
+/* Code Breaker — With Feedback Toast System */
 
 (() => {
   const arrayBoard = document.getElementById('arrayBoard');
@@ -14,11 +14,23 @@
   const resetBtn = document.getElementById('resetBtn');
 
   let arr = new Array(10).fill(null);
+  let feedbackTimer = null;
 
   function setFeedback(msg, type = '') {
     feedback.className = 'feedback';
     if (type) feedback.classList.add(type);
     feedback.textContent = msg;
+
+    // Fade-in
+    feedback.classList.add('show');
+
+    // Clear old timer
+    if (feedbackTimer) clearTimeout(feedbackTimer);
+
+    // Auto hide after 3s
+    feedbackTimer = setTimeout(() => {
+      feedback.classList.remove('show');
+    }, 3000);
   }
 
   function renderArray(highlights = new Set(), classes = {}) {
@@ -65,25 +77,24 @@
     const val = parseIntStrict(valueInput.value);
 
     if (idx === null || val === null) {
-      setFeedback('Provide both index and digit (0–9).', 'warn');
+      setFeedback('❗ Provide both index and digit (0–9).', 'warn');
       return;
     }
     if (val < 0 || val > 9) {
-      setFeedback('Digit must be between 0 and 9.', 'bad');
+      setFeedback('❌ Digit must be between 0 and 9.', 'bad');
       return;
     }
     if (idx < 0 || idx >= arr.length) {
-      setFeedback('Index out of bounds.', 'bad');
+      setFeedback('🚫 Index out of bounds!', 'bad');
       return;
     }
 
-    // Shift right
     for (let j = arr.length - 1; j > idx; j--) {
       arr[j] = arr[j - 1];
     }
     arr[idx] = val;
 
-    setFeedback(`Inserted ${val} at index ${idx}.`, 'ok');
+    setFeedback(`✅ Inserted ${val} at index ${idx}!`, 'ok');
     renderArray(new Set(), { [idx]: 'inserted' });
   });
 
@@ -91,43 +102,38 @@
   deleteBtn.addEventListener('click', () => {
     const idx = parseIntStrict(indexInput.value);
     if (idx === null) {
-      setFeedback('Provide an index to delete.', 'warn');
+      setFeedback('❗ Provide an index to delete.', 'warn');
       return;
     }
     if (idx < 0 || idx >= arr.length) {
-      setFeedback('Index out of bounds.', 'bad');
+      setFeedback('🚫 Index out of bounds!', 'bad');
       return;
     }
 
-    // Shift left
     for (let j = idx; j < arr.length - 1; j++) {
       arr[j] = arr[j + 1];
     }
     arr[arr.length - 1] = null;
 
-    setFeedback(`Deleted value at index ${idx}.`, 'ok');
+    setFeedback(`🗑️ Deleted element at index ${idx}.`, 'ok');
     renderArray(new Set(), { [idx]: 'deleted' });
   });
 
-  // === Search (animated step-by-step) ===
+  // === Search ===
   searchBtn.addEventListener('click', async () => {
     const pattern = parsePattern(patternInput.value);
     if (pattern.length === 0) {
-      setFeedback('Enter a comma-separated pattern, e.g., 2,1,4', 'warn');
+      setFeedback('❗ Enter a valid pattern (e.g., 1,2,3).', 'warn');
       return;
     }
 
     let found = -1;
     for (let i = 0; i <= arr.length - pattern.length; i++) {
-      // highlight current window
       const highlights = new Set();
-      for (let j = 0; j < pattern.length; j++) {
-        highlights.add(i + j);
-      }
+      for (let j = 0; j < pattern.length; j++) highlights.add(i + j);
       renderArray(highlights, Object.fromEntries([...highlights].map(h => [h, 'searching'])));
       await new Promise(r => setTimeout(r, 300));
 
-      // check this window
       let ok = true;
       for (let j = 0; j < pattern.length; j++) {
         if (arr[i + j] !== pattern[j]) { ok = false; break; }
@@ -142,24 +148,23 @@
     }
 
     if (found === -1) {
-      setFeedback('Pattern not found.', 'bad');
+      setFeedback('🔎 Pattern not found.', 'bad');
       renderArray();
     } else {
       const matchSet = new Set();
       for (let k = 0; k < pattern.length; k++) matchSet.add(found + k);
       renderArray(matchSet);
-      setFeedback(`Pattern found at index ${found}!`, 'ok');
+      setFeedback(`🎉 Pattern ${pattern.join(',')} found at index ${found}!`, 'ok');
     }
   });
 
   // === Reset ===
   resetBtn.addEventListener('click', () => {
     arr = new Array(10).fill(null);
-    setFeedback('Array reset.', 'ok');
+    setFeedback('🔄 Array reset.', 'ok');
     renderArray();
   });
 
-  // Initial render
   renderArray();
-  setFeedback('Ready.');
+  setFeedback('💡 Ready. Use the controls to manipulate the array.', 'ok');
 })();
