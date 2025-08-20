@@ -1,10 +1,11 @@
-/* Code Breaker — With Secret Pattern + Hint Button */
+/* Code Breaker — With Secret Pattern + Hint Button + Timer */
 
 (() => {
   const arrayBoard = document.getElementById('arrayBoard');
   const feedback = document.getElementById('feedback');
   const secretPatternDiv = document.getElementById('secretPattern');
   const hintBtn = document.getElementById('hintBtn');
+  const timerEl = document.getElementById('timer');
 
   const indexInput = document.getElementById('indexInput');
   const valueInput = document.getElementById('valueInput');
@@ -18,6 +19,29 @@
   let arr = new Array(10).fill(null);
   let feedbackTimer = null;
   let secretPattern = [];
+
+  // Timer
+  let timeLeft = 60;
+  let timerInterval = null;
+  let gameOver = false;
+
+  function startTimer() {
+    timerEl.textContent = `⏳ ${timeLeft}s`;
+    timerInterval = setInterval(() => {
+      if (timeLeft > 0) {
+        timeLeft--;
+        timerEl.textContent = `⏳ ${timeLeft}s`;
+      } else {
+        clearInterval(timerInterval);
+        gameOver = true;
+        setFeedback('⏰ Time is up! Game Over.', 'bad');
+      }
+    }, 1000);
+  }
+
+  function stopTimer() {
+    clearInterval(timerInterval);
+  }
 
   function setFeedback(msg, type = '') {
     feedback.className = 'feedback';
@@ -71,6 +95,7 @@
 
   // === Insert ===
   insertBtn.addEventListener('click', () => {
+    if (gameOver) return;
     const idx = parseIntStrict(indexInput.value);
     const val = parseIntStrict(valueInput.value);
 
@@ -98,6 +123,7 @@
 
   // === Delete ===
   deleteBtn.addEventListener('click', () => {
+    if (gameOver) return;
     const idx = parseIntStrict(indexInput.value);
     if (idx === null) {
       setFeedback('❗ Provide an index to delete.', 'warn');
@@ -119,6 +145,7 @@
 
   // === Search ===
   searchBtn.addEventListener('click', async () => {
+    if (gameOver) return;
     const pattern = parsePattern(patternInput.value);
     if (pattern.length === 0) {
       setFeedback('❗ Enter a valid pattern (e.g., 1,2,3).', 'warn');
@@ -154,7 +181,10 @@
       renderArray(matchSet);
 
       if (pattern.join(',') === secretPattern.join(',')) {
-        setFeedback('🎉 Level Complete! Secret pattern unlocked.', 'ok');
+        stopTimer();
+        const secondsTaken = 60 - timeLeft;
+        setFeedback(`🎉 You cracked the code in ${secondsTaken} seconds!`, 'ok');
+        gameOver = true;
       } else {
         setFeedback(`✅ Pattern ${pattern.join(',')} found at index ${found}!`, 'ok');
       }
@@ -170,6 +200,7 @@
 
   // === Hint Button ===
   hintBtn.addEventListener('click', () => {
+    if (gameOver) return;
     secretPatternDiv.classList.remove('hidden');
     secretPatternDiv.textContent = `Secret Pattern: [${secretPattern.join(', ')}]`;
     setFeedback('💡 Hint revealed!', 'warn');
@@ -178,7 +209,6 @@
   // === Generate Secret Pattern on Load ===
   function generateSecretPattern() {
     secretPattern = Array.from({ length: 3 }, () => Math.floor(Math.random() * 10));
-    // initially hidden
     secretPatternDiv.textContent = '';
   }
 
@@ -186,4 +216,5 @@
   generateSecretPattern();
   renderArray();
   setFeedback('💡 Ready. Insert digits to crack the code!', 'ok');
+  startTimer();
 })();
