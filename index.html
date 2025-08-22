@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Code Breaker — Array Ops Boilerplate</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Code Breaker</h1>
+    <p class="subtitle">Practice insertion, deletion, and linear subarray search</p>
+  </header>
+
+  <main class="container">
+    <section class="controls" aria-label="Array Controls">
+      <div class="control-row">
+        <label>
+          Index
+          <input id="indexInput" type="number" min="0" placeholder="e.g., 0" />
+        </label>
+        <label>
+          Digit
+          <input id="valueInput" type="number" min="0" max="9" placeholder="0–9" />
+        </label>
+        <button id="insertBtn" class="btn">Insert</button>
+        <button id="deleteBtn" class="btn btn-secondary">Delete</button>
+      </div>
+
+      <div class="control-row">
+        <label class="stretch">
+          Pattern (comma-separated)
+          <input id="patternInput" type="text" value="2,1,4" placeholder="e.g., 2,1,4" />
+        </label>
+        <button id="searchBtn" class="btn btn-accent">Search Pattern</button>
+      </div>
+    </section>
+
+    <section class="board-wrap" aria-label="Array View">
+      <div id="arrayBoard" class="board" aria-live="polite"></div>
+    </section>
+
+    <section aria-live="polite" class="feedback-wrap">
+      <div id="feedback" class="feedback">Ready.</div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <small>Boilerplate build • No external libraries</small>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
