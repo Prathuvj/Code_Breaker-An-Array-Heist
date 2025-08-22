@@ -1,8 +1,9 @@
-/* Code Breaker — With Timer, Secret Pattern & Sound Effects */
+/* Code Breaker — With Timer, Secret Pattern, Sound Effects & Levels */
 
 (() => {
   const arrayBoard = document.getElementById('arrayBoard');
   const feedback = document.getElementById('feedback');
+  const levelIndicator = document.getElementById('levelIndicator');
 
   const indexInput = document.getElementById('indexInput');
   const valueInput = document.getElementById('valueInput');
@@ -16,15 +17,41 @@
   let arr = new Array(10).fill(null);
   let feedbackTimer = null;
 
-  // === Secret Pattern ===
+  // === Levels ===
+  let level = 1;
   let secretPattern = [];
+
+  function updateLevelIndicator() {
+    levelIndicator.textContent = `🔥 Level ${level}`;
+  }
+
   function generateSecretPattern() {
-    secretPattern = [];
-    for (let i = 0; i < 3; i++) {
-      secretPattern.push(Math.floor(Math.random() * 10));
+    if (level === 1) {
+      secretPattern = [randDigit(), randDigit()];
+    } else if (level === 2) {
+      secretPattern = [randDigit(), randDigit(), randDigit()];
+    } else if (level === 3) {
+      secretPattern = [randDigit(), randDigit(), randDigit()].reverse();
+    }
+    updateLevelIndicator();
+  }
+
+  function randDigit() {
+    return Math.floor(Math.random() * 10);
+  }
+
+  function advanceLevel() {
+    if (level < 3) {
+      level++;
+      generateSecretPattern();
+      startTimer();
+      renderArray();
+      setFeedback(`🚀 Level ${level} started!`, 'ok');
+    } else {
+      setFeedback(`🏆 You completed all levels!`, 'ok');
+      playFanfare();
     }
   }
-  generateSecretPattern();
 
   // === Timer ===
   let timeLeft = 60;
@@ -44,6 +71,7 @@
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         setFeedback('⏰ Time’s up! Try again.', 'bad');
+        playBuzz();
         arr = new Array(10).fill(null);
         renderArray();
       }
@@ -52,7 +80,7 @@
   }
 
   function updateTimer() {
-    timerDisplay.textContent = `⏳ Time Left: ${Math.max(timeLeft, 0)}s`;
+    timerDisplay.textContent = `⏳ Level ${level} — Time Left: ${Math.max(timeLeft, 0)}s`;
   }
 
   // === Feedback System ===
@@ -242,11 +270,18 @@
       for (let k = 0; k < pattern.length; k++) matchSet.add(found + k);
       renderArray(matchSet);
 
-      if (pattern.join(',') === secretPattern.join(',')) {
+      // === Check level success ===
+      let targetPattern = secretPattern;
+      if (level === 3) {
+        targetPattern = [...secretPattern]; // already reversed
+      }
+
+      if (pattern.join(',') === targetPattern.join(',')) {
         clearInterval(timerInterval);
         const timeTaken = Math.floor((Date.now() - startTime) / 1000);
-        setFeedback(`🎉 You cracked the code in ${timeTaken} seconds!`, 'ok');
+        setFeedback(`🎉 Level ${level} complete in ${timeTaken} seconds!`, 'ok');
         playFanfare();
+        setTimeout(advanceLevel, 2000);
       } else {
         setFeedback(`✅ Pattern ${pattern.join(',')} found at index ${found}.`, 'ok');
         playBeep(600);
@@ -257,14 +292,16 @@
   // === Reset ===
   resetBtn.addEventListener('click', () => {
     arr = new Array(10).fill(null);
+    level = 1;
     generateSecretPattern();
     startTimer();
-    setFeedback('🔄 Array reset. New secret code generated.', 'ok');
+    setFeedback('🔄 Game reset. Back to Level 1.', 'ok');
     renderArray();
   });
 
   // === Init ===
+  generateSecretPattern();
   renderArray();
   startTimer();
-  setFeedback('💡 Ready. Use the controls to manipulate the array.', 'ok');
+  setFeedback('💡 Ready. Level 1 started!', 'ok');
 })();
